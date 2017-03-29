@@ -12,7 +12,10 @@
         preload: preload, create: create, update: update
     });
 
-    var ball;
+    var balls;
+    var newBall;
+    var ballInfo;
+
     var paddle;
 
     var bricks;
@@ -48,16 +51,7 @@
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.arcade.checkCollision.down = false;
 
-//        ball = game.add.sprite(game.world.width*0.5,game.world.height - 30,'ball');
-        ball = game.add.sprite(50, 250,'ball');
-        ball.animations.add('wobble', [0,1,0,2,0,1,0,2,0], 24);
-        ball.anchor.set(0.5);
-        game.physics.enable(ball, Phaser.Physics.ARCADE);
-        ball.body.collideWorldBounds = true;
-        ball.body.bounce.set(1);
 
-        ball.checkWorldBounds = true;
-        ball.events.onOutOfBounds.add(ballLeaveScreen, this);
 
         paddle = game.add.sprite(game.world.width*0.5, game.world.height-5, 'paddle');
         paddle.anchor.set(0.5,1);
@@ -65,6 +59,7 @@
         paddle.body.immovable = true;
 
         initBricks();
+        initBalls();
 
         scoreText = game.add.text(5,5, 'Points: 0', textStyle);
 
@@ -81,11 +76,37 @@
 
 
     function update() {
-        game.physics.arcade.collide(ball, paddle, ballHitPaddle);
-        game.physics.arcade.collide(ball, bricks, ballHitBrick);
+        game.physics.arcade.collide(balls, paddle, ballHitPaddle);
+        game.physics.arcade.collide(balls, bricks, ballHitBrick);
 
         if(playing){
             paddle.x = game.input.x || game.world.width*0.5;
+        }
+    }
+
+    function initBalls(){
+        ballInfo = {
+            padding: 20,
+            offsetLeft: 50,
+            offsetTop: 250,
+            count: 2
+        };
+
+        balls = game.add.group();
+
+        for (c=0;c < ballInfo.count; c++){
+            newBall = game.add.sprite((c+1) * game.world.width/(ballInfo.count + 1), ballInfo.offsetTop, 'ball');
+            newBall.animations.add('wobble', [0,1,0,2,0,1,0,2,0], 24);
+            newBall.anchor.set(0.5);
+            game.physics.enable(newBall, Phaser.Physics.ARCADE);
+            newBall.body.collideWorldBounds = true;
+            newBall.body.bounce.set(1);
+
+            newBall.checkWorldBounds = true;
+            newBall.events.onOutOfBounds.add(ballLeaveScreen, this);
+
+            balls.add(newBall);
+
         }
     }
 
@@ -148,7 +169,7 @@
         ball.body.velocity.x = -1*5*(paddle.x - ball.x);
     }
 
-    function ballLeaveScreen() {
+    function ballLeaveScreen(ball) {
         lives--;
         if(lives){
             livesText.setText('Lives: '+ lives);
@@ -157,7 +178,7 @@
             paddle.reset(game.world.width*0.5, game.world.height-5);
             game.input.onDown.addOnce(function () {
                 lifeLostText.visible = false;
-                ball.body.velocity.set(150, -150);
+                ball.body.velocity.set(getRandomArbitary(-150,150), getRandomArbitary(-150,-50));
             }, this);
         } else {
             alert('You lost, game over');
@@ -167,8 +188,15 @@
 
     function startGame() {
         startButton.destroy();
-        ball.body.velocity.set(150, -150);
+        balls.children.forEach(function(ball){
+            ball.body.velocity.set(getRandomArbitary(-150,150), getRandomArbitary(-150,-50));
+        });
         playing = true;
+    }
+
+    function getRandomArbitary(min, max)
+    {
+        return Math.random() * (max - min) + min;
     }
 
 </script>
