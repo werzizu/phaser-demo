@@ -17,6 +17,7 @@
     var ballInfo;
 
     var paddle;
+    var paddles;
 
     var bricks;
     var newBrick;
@@ -50,16 +51,11 @@
     function create() {
         game.physics.startSystem(Phaser.Physics.ARCADE);
         game.physics.arcade.checkCollision.down = false;
-
-
-
-        paddle = game.add.sprite(game.world.width*0.5, game.world.height-5, 'paddle');
-        paddle.anchor.set(0.5,1);
-        game.physics.enable(paddle, Phaser.Physics.ARCADE);
-        paddle.body.immovable = true;
+        game.physics.arcade.checkCollision.up = false;
 
         initBricks();
         initBalls();
+        initPaddle();
 
         scoreText = game.add.text(5,5, 'Points: 0', textStyle);
 
@@ -76,11 +72,13 @@
 
 
     function update() {
-        game.physics.arcade.collide(balls, paddle, ballHitPaddle);
+        game.physics.arcade.collide(balls, paddles, ballHitPaddle);
         game.physics.arcade.collide(balls, bricks, ballHitBrick);
 
         if(playing){
-            paddle.x = game.input.x || game.world.width*0.5;
+            paddles.forEach(function(paddle) {
+                paddle.x = game.input.x || game.world.width*0.5;
+            }, this);
         }
     }
 
@@ -89,7 +87,7 @@
             padding: 20,
             offsetLeft: 50,
             offsetTop: 250,
-            count: 2
+            count: 1
         };
 
         balls = game.add.group();
@@ -104,7 +102,6 @@
 
             newBall.checkWorldBounds = true;
             newBall.events.onOutOfBounds.add(ballLeaveScreen, this);
-
             balls.add(newBall);
 
         }
@@ -120,7 +117,7 @@
                 col: 3
             },
             offset: {
-                top : 50,
+                top : game.world.height*0.5,
                 left: 60
             },
             padding: 10
@@ -131,7 +128,8 @@
         for(var c=0; c<brickInfo.count.col;c++){
             for(var r=0; r<brickInfo.count.row; r++){
                 var brickX = (r*(brickInfo.width + brickInfo.padding)) + brickInfo.offset.left;
-                var brickY = (c*(brickInfo.height + brickInfo.padding)) + brickInfo.offset.top;
+                var brickY = (c*(brickInfo.height + brickInfo.padding)) + brickInfo.offset.top -
+                        ((brickInfo.count.col*brickInfo.height + (brickInfo.count.col-1)*brickInfo.padding)/2);
                 newBrick = game.add.sprite(brickX, brickY, 'brick');
                 game.physics.enable(newBrick, Phaser.Physics.ARCADE);
                 newBrick.body.immovable = true;
@@ -139,6 +137,20 @@
                 bricks.add(newBrick);
             }
         }
+    }
+
+    function initPaddle(){
+        paddles = game.add.group();
+        createPaddle(game.world.height - 5);
+        createPaddle(15);
+        function createPaddle(height) {
+            var newPaddle = game.add.sprite(game.world.width*0.5, height, 'paddle');
+            newPaddle.anchor.set(0.5,1);
+            game.physics.enable(newPaddle, Phaser.Physics.ARCADE);
+            newPaddle.body.immovable = true;
+            paddles.add(newPaddle);
+        }
+
     }
 
 
@@ -175,7 +187,9 @@
             livesText.setText('Lives: '+ lives);
             lifeLostText.visible = true;
             ball.reset(game.world.width*0.5, game.world.height-25);
-            paddle.reset(game.world.width*0.5, game.world.height-5);
+            paddles.forEach(function(paddle) {
+                paddle.x = game.world.width*0.5;
+            }, this);
             game.input.onDown.addOnce(function () {
                 lifeLostText.visible = false;
                 ball.body.velocity.set(getRandomArbitary(-150,150), getRandomArbitary(-150,-50));
